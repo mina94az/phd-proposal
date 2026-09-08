@@ -1,0 +1,14 @@
+\chapter*{Summary}
+\addcontentsline{toc}{chapter}{Summary}
+\begin{singlespace}
+
+Resting-state functional magnetic resonance imaging (rs-fMRI) and graph theory offer a non-invasive way to study network-level alterations associated with Parkinson's disease (PD). Their scientific and eventual clinical value, however, depends on results that remain reliable when reasonable analytical choices or computational environments change. 
+As analyses become increasingly computational, ensuring their numerical reliability has become a critical challenge. Small perturbations introduced during processing can propagate through complex pipelines, leading to variability in outcomes and raising concerns about the reproducibility of reported findings. Addressing this issue requires systematic evaluation of pipeline stability to ensure results remain within acceptable numerical limits. 
+
+This doctoral research investigates the numerical variability of functional MRI graph measures. The central objective is to systematically evaluate the numerical variability of graph measures of functional connectivity and to translate that knowledge into practical guidance for robust studies. 
+
+Phase I, now completed, quantified numerical variability in graph measures derived from fMRIPrep-processed Parkinson's Progression Markers Initiative (PPMI) data. Ten Monte Carlo Arithmetic realizations were generated per participant. Numerical variability was compared with between-participant variability using the Numerical--Population Variability Ratio (\npvratio{}). Across the evaluated local and global graph measures, mean \npvratio{} values were approximately 0.02--0.19 and depended on graph metric, brain region, network threshold, population, and confound-regression strategy. For nominal $p$-values from 0.01 to 0.09, the estimated mean probability of a numerically induced significance flip was 17.7\%. These results establish that computational noise is measurable and can affect inferential decisions near a significance threshold.
+
+Phase II (?) is currently under development and its scope may change as the work progresses. Preliminary work has examined the relationship between numerical variability and quality-control (QC) metrics, with the aim of determining whether numerical variability can be predicted from QC measurements. 
+
+\end{singlespace}

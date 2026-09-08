@@ -1,0 +1,83 @@
+\documentclass[12pt,letterpaper,oneside]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\usepackage[
+  backend=biber,
+  style=numeric,
+  sorting=none,
+  maxbibnames=99
+]{biblatex}
+\addbibresource{references.bib}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!45!black,
+  citecolor=green!35!black,
+  urlcolor=blue!55!black,
+  pdftitle={Numerical variability of functional MRI graph measures},
+  pdfauthor={Mina Alizadeh}
+}
+
+\graphicspath{{figures/}}
+\setlist{nosep}
+\onehalfspacing
+\setlength{\parskip}{0.35em}
+\setlength{\parindent}{1.5em}
+
+\newcommand{\npvr}{\ensuremath{\nu_{\mathrm{npv}}}}
+\newcommand{\npvratio}{NPVR}
+\newcommand{\projecttitle}{Numerical variability of functional MRI graph measures}
+
+\begin{document}
+
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+  \centering
+  \vspace*{1.25in}
+  {\Large\bfseries \projecttitle\par}
+  \vspace{0.7in}
+  {\large Doctoral Research Proposal (ENCS 8511)\par}
+  \vspace{0.25in}
+  {\large Mina Alizadeh\par}
+  \vfill
+  {\large Department of Computer Science and Software Engineering\par}
+  {\large Gina Cody School of Engineering and Computer Science\par}
+  {\large Concordia University\par}
+  \vspace{0.5in}
+  {\large Co-supervisors: Tristan Glatard and Gregory Kiar\par}
+  \vspace{0.5in}
+  {\large \today\par}
+\end{titlepage}
+
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+\input{sections/00-summary}
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+
+\pagenumbering{arabic}
+\input{sections/01-introduction}
+\input{sections/02-NVBackground}
+\input{sections/03-Numerical variability of functional MRI graph measures}
+\input{sections/04-future-work}
+
+\printbibliography[heading=bibintoc,title={References}]
+
+\end{document}

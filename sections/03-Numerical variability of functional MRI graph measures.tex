@@ -1,0 +1,110 @@
+\chapter{Phase I}
+\label{chap:phase-one}
+
+\section{Phase I purpose and design}
+
+Phase I addressed RQ1 and the initial part of RQ3 by isolating numerical variability in a fixed rs-fMRI graph-analysis workflow. The same input data, software versions, and processing parameters were used for all repetitions. Only controlled floating-point perturbations varied. This design attributes within-participant differences across repetitions to the numerical experiment rather than to acquisition, biological change, or analyst choice.
+
+\section{Dataset and participants}
+
+The study used data from the Parkinson's Progression Markers Initiative (PPMI), an international multicentre observational study \cite{PPMI2011}. Participants with available resting-state fMRI included 147 people with PD and 38 healthy controls. To limit acquisition heterogeneity in this first experiment, the analysis was restricted to right-to-left phase-encoded runs. Each selected resting-state acquisition contained 240 volumes over 10 minutes, with repetition time 2500~ms and echo time 30~ms. DICOM data were converted to NIfTI and organized for processing in accordance with the Brain Imaging Data Structure.
+
+The study used previously collected data under the PPMI Data Use Agreement. Concordia University's Office of Research confirmed that the project was exempt from institutional research ethics approval. No identifiable information was accessed.
+
+\section{Preprocessing and connectome construction}
+
+Anatomical and functional data were preprocessed with fMRIPrep 23.2.1. Anatomical processing included bias-field correction, skull stripping, tissue segmentation, and normalization to MNI152NLin2009cAsym space. Functional processing generated a BOLD reference, estimated head motion, coregistered the BOLD reference to the anatomical image, and resampled the time series into standard space.
+
+Regional time series were extracted with Nilearn using the Schaefer 2018 atlas with 100 cortical regions and seven functional networks. A 6~mm full-width-at-half-maximum spatial smoothing kernel and temporal standardization were applied. Pearson-correlation matrices were computed for two variants:
+
+\begin{enumerate}
+  \item \textbf{with confound regression}, using the six rigid-body motion parameters; and
+  \item \textbf{without confound regression}, to evaluate how this consequential choice interacts with numerical variability.
+\end{enumerate}
+
+The absolute correlations were thresholded at $T\in\{0.05,0.10,0.20,0.30,0.40,0.50\}$ and transformed into binary undirected graphs. Four local measures---degree, clustering coefficient, betweenness centrality, and eigenvector centrality---and two global measures---average shortest path length and small-worldness---were calculated with NetworkX 3.5.
+
+\section{Numerical perturbation experiment}
+
+Random Rounding MCA was applied through Verificarlo's fuzzy libmath implementation \cite{Parker1997MCA,Denis2016Verificarlo,Salari2021}. For an operation with unperturbed result $x$, a perturbed result can be written as
+
+\begin{equation}
+  \widetilde{x}=x+2^{e_x-t}\xi,
+\end{equation}
+
+where $e_x$ is the exponent of $x$, $t$ is the virtual precision, and $\xi$ is uniformly distributed on $(-1/2,1/2)$. The virtual precision was set to 24 bits for binary32 and 53 bits for binary64. Fuzzy libmath intercepted calls to elementary functions at runtime, modeling variation that can arise across mathematical libraries and computational environments while avoiding source-code modification.
+
+The complete preprocessing pipeline was executed for ten independent MCA realizations per participant. The MCA-to-standard IEEE wall-clock ratio was approximately 1.29 for a single execution. Although the aggregate compute requirement was therefore substantial, independent realizations could be run in parallel.
+
+\section{Variance estimation and inferential propagation}
+
+For outcome $x_{i,j}$ from MCA repetition $i$ and participant $j$, numerical variance was estimated within participants and population variance between participants:
+
+\begin{align}
+\sigma^2_{\mathrm{num}}
+  &=\frac{1}{m}\sum_{j=1}^{m}
+    \left[\frac{1}{n-1}\sum_{i=1}^{n}
+      \left(x_{i,j}-\bar{x}_{\cdot,j}\right)^2\right],\\
+\sigma^2_{\mathrm{pop}}
+  &=\frac{1}{n}\sum_{i=1}^{n}
+    \left[\frac{1}{m-1}\sum_{j=1}^{m}
+      \left(x_{i,j}-\bar{x}_{i,\cdot}\right)^2\right].
+\end{align}
+
+The Numerical--Population Variability Ratio was then calculated as
+
+\begin{equation}
+  \npvr=\frac{\sigma_{\mathrm{num}}}{\sigma_{\mathrm{pop}}}.
+  \label{eq:npvr}
+\end{equation}
+
+Estimates were produced for the pooled sample and separately for PD and healthy-control groups. For local measures, the analysis retained region-level estimates rather than relying only on a spatial average.
+
+The observed \npvratio{} values were propagated to Cohen's $d$, two-sample $t$ tests, partial correlations, and ANCOVA using first-order formulas \cite{Yohan2025NPVR}. Sample sizes from 30 to 1000 and representative test-statistic values were evaluated. For each nominal $p$-value, $p_0$, a beta distribution was fitted by moment matching to the propagated numerical variance. At $\alpha=0.05$, the probability that numerical variability changed the significance classification was
+
+\begin{equation}
+P_{\mathrm{flip}}=
+\begin{cases}
+  1-F_{\mathrm{Beta}}(\alpha;a,b), & p_0\leq\alpha,\\
+  F_{\mathrm{Beta}}(\alpha;a,b), & p_0>\alpha.
+\end{cases}
+\end{equation}
+
+This quantity measures instability of the nominal decision. It is not a classical false-positive or false-negative rate because the underlying biological truth is unknown.
+
+\section{Phase I results}
+
+Mean \npvratio{} values were approximately 0.04--0.19 for local measures and 0.02--0.18 for global measures across the tested thresholds. The values remained below 0.2, but their patterns differed substantially by outcome. Clustering coefficient and betweenness centrality generally became less favorable as the threshold increased, while degree and eigenvector centrality tended to show decreasing \npvratio{}. The global measures were elevated at the lowest threshold, decreased toward intermediate thresholds, and rose again in some settings. These results show why a single global estimate of numerical reliability is insufficient.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.80\textwidth]{Figure2.pdf}
+  \caption[\npvratio{} for local graph measures]{Numerical variability, population variability, and mean \npvratio{} for local graph measures across network thresholds in the completed Phase I study. Results are shown for the pooled sample and separately for PD and healthy-control groups.}
+  \label{fig:local-npvr}
+\end{figure}
+
+The region-level maps were spatially heterogeneous. At higher thresholds, clustering and betweenness in particular contained localized regions with elevated \npvratio{}. This finding matters for node-level associations because a region can be numerically sensitive even when a whole-brain average appears stable.
+
+Confound regression changed both the magnitude and distribution of \npvratio{}. The workflow without motion-parameter regression generally had lower \npvratio{}, but this result cannot be interpreted as evidence of higher validity. Omitting nuisance regression may leave motion-related signal in the connectome. The result instead demonstrates an important thesis principle: numerical stability, data quality, and biological validity must be evaluated jointly.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.98\textwidth]{Figure3.pdf}
+  \caption[\npvratio{} for global graph measures]{Numerical variability, population variability, and mean \npvratio{} for small-worldness and average shortest path length across thresholds in Phase I.}
+  \label{fig:global-npvr}
+\end{figure}
+
+Numerical uncertainty was most consequential for results near the significance threshold. Among 972 evaluated configurations with nominal $p$-values from 0.01 to 0.09, the pooled analysis produced a mean significance-flip probability of 17.7\%. Elevated probabilities occurred at both small and large sample sizes when the nominal result remained close to $\alpha$. Increasing sample size therefore cannot, by itself, guarantee a stable binary conclusion.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.98\textwidth]{Figure7.pdf}
+  \caption[Probability of numerically induced significance flips]{Estimated probability of a numerically induced significance reclassification as a function of the distance between the nominal $p$-value and $\alpha=0.05$. The curves summarize configurations across graph measures, thresholds, sample sizes, and statistical tests.}
+  \label{fig:flip-probability}
+\end{figure}
+
+\section{Interpretation and limitations}
+
+Phase I establishes that low-level computational perturbations can propagate through rs-fMRI preprocessing and graph construction to quantities used for scientific inference. The magnitude is not uniform, and numerical sensitivity depends on decisions that researchers ordinarily treat as methodological choices. \npvratio{} makes the scale of this variability interpretable relative to the population, while propagation formulas expose its possible inferential consequences.
+
+The study also defines the boundaries of the evidence. It used one principal preprocessing pipeline, one atlas resolution, absolute thresholding, cross-sectional data, and right-to-left acquisitions from PPMI. Fuzzy libmath targets mathematical-library functions and does not reproduce every possible source of infrastructure variability. Ten repetitions estimate a distribution but do not establish an exact error law. Finally, \npvratio{} depends on the population denominator and is not an accuracy measure. These limitations directly motivate the proposed future work.
