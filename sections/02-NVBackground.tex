@@ -22,7 +22,42 @@ Stochastic arithmetic, uncertainty or sensitivity analysis, and random-seed anal
 
 where $e_x$ is the exponent of $x$, $t$ is the virtual precision, and $\xi$ is a uniformly distributed random variable on $(-1/2,1/2)$. MCA can be applied in three perturbation modes. Precision Bounding perturbs the inputs of an operation and enables the detection of catastrophic cancellation; Random Rounding perturbs the output and enables the investigation of rounding error; and Full MCA combines both modes~\cite{Salari2021}.
 
-Under the MCA framework, floating-point operations in an algorithm or software pipeline are randomly perturbed, and the analysis is repeated to generate a distribution of equally plausible results. The variability of this distribution provides information about the numerical stability of the evaluated software or pipeline. Numerical uncertainty may be summarized through the dispersion of repeated results, the number of significant digits that remain consistent across executions, or outcome-specific measures that compare numerical variability with other relevant sources of variation. The resulting estimates depend on the perturbation mode, the virtual precision, and the extent of software instrumentation~\cite{Denis2016Verificarlo,Kiar2021}. The particular MCA configuration and measures used in this thesis are presented in Chapter~\ref{chap:phase-one}.
+Under the MCA framework, floating-point operations in an algorithm or software pipeline are randomly perturbed, and the analysis is repeated to generate a distribution of equally plausible results. The variability of this distribution provides information about the numerical stability of the evaluated software or pipeline. Numerical uncertainty may be summarized through the dispersion of repeated results, the number of significant digits that remain consistent across executions, or outcome-specific measures that compare numerical variability with other relevant sources of variation. The resulting estimates depend on the perturbation mode, the virtual precision, and the extent of software instrumentation~\cite{Denis2016Verificarlo,Kiar2021}. 
+%The particular MCA configuration and measures used in this thesis are presented in Chapter~\ref{chap:phase-one}.
+
+
+\subsection{Evaluation of MCA}
+
+After obtaining samples through stochastic arithmetic, we quantify the numerical uncertainty of the results using both the number of significant bits and the standard deviation across MCA realizations.
+
+\emph{Significant Bits:}
+
+In the context of MCA, the number of significant bits can be interpreted as the number of bits expected to agree across repeated executions of the same computation under stochastic arithmetic~\cite{Sohier2021Confidence}.
+
+Let $X_1, X_2, \ldots, X_n$ denote the values obtained from $n$ independent executions of the program using stochastic arithmetic. These values are considered realizations of the same random variable $X$. The expected value $\mu = E[X]$ can be estimated using the empirical mean
+
+$$
+\hat{\mu} = \frac{1}{n}\sum_{i=1}^{n} X_i,
+$$
+
+and the variability of the realizations can be estimated using the empirical standard deviation
+
+$$
+\hat{\sigma} =
+\sqrt{\frac{1}{n-1}\sum_{i=1}^{n}(X_i-\hat{\mu})^2}.
+$$
+
+The MCA number of significant bits, interpreted as a measure of numerical precision, is estimated as~\cite{Sohier2021Confidence}
+
+$$
+s_{\widehat{\mathrm{MCA}}}
+=
+-\log_2\left|\frac{\hat{\sigma}}{\hat{\mu}}\right|,
+$$
+
+where $s_{\widehat{\mathrm{MCA}}}$ approximates the number of significant bits from the $n$ MCA realizations, and $\hat{\mu}$ and $\hat{\sigma}$ denote their empirical mean and standard deviation, respectively.
+
+In addition to the number of significant bits, we directly quantify numerical variability using the standard deviation of each output metric across MCA realizations. For a given metric, a larger $\hat{\sigma}$ indicates greater variation induced by numerical perturbations, whereas a smaller $\hat{\sigma}$ indicates greater numerical stability. Thus, while $s_{\widehat{\mathrm{MCA}}}$ provides a relative measure of numerical precision by normalizing the variability by the magnitude of the estimated value, $\hat{\sigma}$ provides an absolute measure of the numerical variability of the metric across MCA executions.
 
 \section{Numerical variability in neuroimaging: literature review}
 
