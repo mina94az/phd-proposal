@@ -11,3 +11,6 @@
 *.toc
 *.lof
 *.lot
+
+# Compiled proposal (PDF figures under figures/ are source assets)
+/main.pdf

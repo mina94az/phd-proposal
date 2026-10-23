@@ -1,0 +1,44 @@
+name: Build proposal PDF
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile and upload proposal-pdf
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Compile proposal with latexmk and pdfLaTeX
+        uses: xu-cheng/latex-action@v4
+        with:
+          root_file: main.tex
+          compiler: latexmk
+          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
+          texlive_version: 2022
+
+      - name: Verify compiled PDF
+        shell: bash
+        run: |
+          if [[ ! -s main.pdf ]]; then
+            echo "::error file=main.tex::The LaTeX build did not produce a non-empty main.pdf."
+            exit 1
+          fi
+
+      - name: Upload proposal PDF
+        uses: actions/upload-artifact@v7
+        with:
+          name: proposal-pdf
+          path: main.pdf
+          if-no-files-found: error
+          retention-days: 30

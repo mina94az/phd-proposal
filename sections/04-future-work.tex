@@ -1,40 +1,120 @@
-\chapter{Future Work: Predicting Numerical Variability}
+\chapter{Predicting Numerical Variability from Standard Functional Connectivity}
 \label{chap:future-work}
 
-\section{Motivation and main question}
+\section*{Abstract}
 
-The first phase of this research demonstrated that numerical variability (NV) in functional MRI graph measures is measurable and can influence statistical conclusions. These findings establish the importance of evaluating numerical stability, particularly when the observed effects are small or close to a decision threshold. However, direct assessment with Monte Carlo Arithmetic (MCA) requires repeated executions of the processing workflow and is therefore computationally expensive. In addition, most researchers do not routinely have access to an MCA-instrumented environment. Consequently, numerical stability is rarely evaluated as part of a conventional neuroimaging analysis.
+Numerical perturbations introduced during fMRI preprocessing can propagate to functional connectivity (FC) and its derived graph measures. Assessing this numerical variability (NV) is important, as previous findings have shown that NV in fMRI graph measures is measurable and may affect statistical conclusions, particularly when observed effects are close to statistical decision thresholds, potentially leading to false-positive or false-negative findings. However, directly quantifying NV using Monte Carlo Arithmetic (MCA) requires repeated preprocessing runs, making it computationally expensive and potentially impractical for routine studies. 
+This phase investigates whether NV can be predicted from the FC matrix produced by a single standard IEEE execution. The current analysis focuses on 152 participants with Parkinson's disease and uses the retained MCA repetitions to define participant-level NV targets. Random forests, ridge regression, and a compact BrainNetCNN model were explored. A controlled BrainNetCNN experiment further compared an FC-only baseline (M0), FC supplemented with threshold-proximity features (M1), and FC supplemented with proximity and metric-specific structural-influence features (M2). Preliminary results indicate that proximity features improve prediction for most nonconstant graph-metric and threshold combinations. Structural-influence features provide additional gains for some outcomes but also produce important numerical and extrapolation failures. A complementary experiment suggests that the IEEE connectome contains useful information for ranking participants by NV, although identifying the most sensitive participants remains more difficult. These findings motivate further development of a robust prediction or screening approach rather than establishing a finalized model.
 
-The next phase of this research is motivated by a practical question:
+\section{Introduction}
+
+Phase~I demonstrated that NV in fMRI graph measures is measurable and can influence conclusions when an observed effect is close to a decision threshold. Although repeated MCA executions provide an empirical estimate of this uncertainty, their computational cost and specialized instrumentation limit routine use. The main question of the present phase is therefore:
 
 \begin{quote}
-\emph{Can the numerical variability of graph measures be predicted from the functional connectome produced by a single standard execution?}
+\emph{Can the numerical variability of graph measures be predicted from the functional connectome produced by a single standard IEEE execution?}
 \end{quote}
 
-Here, a standard or \emph{IEEE} execution refers to ordinary processing without MCA perturbations. If the resulting functional connectivity (FC) matrix contains information about its own numerical sensitivity, it may be possible to estimate NV without repeating the complete workflow. Such an estimate would not replace MCA as the reference method for characterizing numerical uncertainty, but it could provide an accessible screening tool for identifying potentially unstable results.
+MCA perturbations affect FC in a structured and non-uniform manner. Connections close to the graph-construction threshold are more likely to change their inclusion status, thereby converting small FC perturbations into topological changes. The consequence also depends on the location of an affected edge: changing an edge with an influential network position may alter a graph measure more than changing another edge by the same amount. Binary graph NV was attributable to these topological changes, whereas weighted graph NV reflected changes in both topology and edge weights. Thus, the IEEE connectome may contain information about numerical sensitivity through edge magnitude, threshold proximity, and network organization.
 
-\section{Why prediction may be possible}
+Randomness does not make this prediction problem inherently impossible. Individual MCA perturbations are stochastic, but their variance may still depend systematically on observable properties of the input. The objective is to determine whether the IEEE connectome contains sufficient information to estimate NV magnitude or, at minimum, to identify participants with comparatively high numerical sensitivity.
 
-Preliminary exploratory analyses investigated how MCA perturbations in FC propagate into graph-metric NV. The findings suggest that this propagation is structured rather than uniform. In particular, connections whose correlation values are close to the graph-construction threshold are more likely to switch between being included and excluded. These edge changes can alter network topology and amplify small numerical perturbations into larger differences in graph measures.
+\section{Data}
 
-Threshold proximity alone does not fully determine this effect. The spatial and topological locations of the affected edges are also important: a perturbation involving a highly connected or otherwise influential part of the network may have a different consequence from an equally sized perturbation elsewhere. The analysis further indicated that binary graph variability arises through changes in topology, whereas weighted graph variability can reflect both changing topology and changing connection weights. Together, these findings suggest that the standard connectome contains potentially informative features---including connection magnitude, distance from the threshold, and the organization of vulnerable edges---that may indicate future numerical sensitivity. This provides the main rationale for prediction.
+The analysis reused the PPMI data and processing outputs described in Chapter~\ref{chap:phase-one}, but was restricted to the Parkinson's disease population. The current matched cohort contains 152 participants with both a valid IEEE reference connectome and retained MCA outputs. Quality control excluded two failed IEEE executions and seven failed MCA repetitions. Consequently, 146 participants retained ten MCA repetitions, five retained nine, and one retained eight. Participants were not excluded because their NV or prediction error was high.
 
-\section{Preliminary prediction results}
+Each participant was represented by a signed $100\times100$ IEEE FC matrix based on the Schaefer parcellation, corresponding to 4,950 unique connections. Graph measures were evaluated at absolute-correlation thresholds of 0.05, 0.2, and 0.5. The prediction targets comprised four regional measures---degree centrality, betweenness centrality, eigenvector centrality, and clustering coefficient---and five global measures: global efficiency, number of connected components, largest-component fraction, average shortest path length, and small-worldness.
 
-Initial experiments used a simple BrainNetCNN-style model to predict graph-measure NV from the IEEE connectivity matrix. This model was selected because its edge-to-edge and edge-to-node operations are designed to retain relationships among connections and brain regions rather than treating connectivity values as unrelated features. A logarithmic transformation of NV was used to reduce the influence of its strongly skewed distribution.
+For participant $s$, graph measure $g$, and threshold $\tau$, the target $y_{s,g}^{(\tau)}$ was the standard deviation of the graph measure across the participant's retained MCA repetitions. For regional measures, the standard deviation was calculated separately at each region and then averaged across the 100 regions. The FC matrix from the single IEEE execution was the predictor; MCA-derived quantities were used only to construct and evaluate the target.
 
-The results provide preliminary evidence that prediction may be feasible, although performance is not consistent across all graph measures or thresholds. Some outcomes, including degree and eigenvector centrality in lower-threshold graphs and betweenness or clustering in other threshold settings, showed more promising prediction than others. 
+\section{Methods}
 
-For several graph measures, the Spearman correlations between predicted and observed NV were informative even when prediction of the exact NV magnitude remained limited. This indicates that the model may already contain useful information for ordering participants from less to more numerically sensitive. Such ordering is relevant in practice because it could help identify participants for whom a direct MCA analysis should be prioritized.
+\subsection{Prediction models}
 
-These findings remain preliminary and do not yet establish a generally accurate predictor. Their importance is instead that they support the central premise of this phase: the IEEE connectome appears to contain information about numerical fragility, but the usefulness of that information differs across graph measures and graph-construction choices.
+Three model families were explored: random forest, ridge regression, and BrainNetCNN. Random forest and ridge regression used the 4,950 unique FC values as predictors, providing nonlinear tree-based and regularized linear baselines, respectively. BrainNetCNN was used to preserve the relational structure of the connectome rather than treating its connections as unrelated features \cite{Kawahara2017BrainNetCNN}. These models are supervised regression models because their primary outcome is continuous NV rather than a diagnostic or categorical class.
 
-\section{Challenges and proposed direction}
+For the controlled M0--M2 comparison, a compact BrainNetCNN received the signed $100\times100$ IEEE FC matrix and jointly predicted the nine graph-measure NV outcomes at a given graph threshold. Its FC branch consisted of an edge-to-edge convolution, a LeakyReLU activation, an edge-to-node convolution, a second LeakyReLU activation, flattening, a dense layer, dropout, and a linear nine-output prediction layer. Four candidate configurations were considered, with 4 or 8 edge-to-edge channels, 8 or 16 edge-to-node channels, a dense-layer width of 16 or 32, and FC-branch dropout of 0.2, 0.3, or 0.4; the configuration was selected within inner validation. However, graph construction introduces a threshold-dependent decision boundary that may not be represented efficiently by the FC encoder alone.
+Two IEEE-derived properties motivate the current feature additions. First, an edge close to the threshold may be relevant to numerical sensitivity because a sufficiently large change in its correlation could alter graph inclusion. Second, the consequence of a hypothetical edge change depends on the graph’s structure and the metric under consideration. Proximity and structural influence therefore describe complementary aspects of the reference graph. They do not identify which edges MCA will change. MCA perturbs preprocessing computations, rather than independently perturbing final FC entries; we consequently assume neither isotropic FC errors nor known edge-switching probabilities.
+We asked whether threshold proximity and metric-specific hypothetical edge influence improve subject-held-out NV prediction beyond FC-only BrainNetCNN. We compared three models on identical data and splits and examined their predictive performance, computational coverage, and input reliance. The study is an exploratory ablation on a previously examined cohort, including numerical failure analysis, rather than a confirmatory assessment of a finalized prediction system.
 
-Predicting NV presents several conceptual challenges. The response to MCA perturbations is itself random, and NV estimated from a finite number of realizations is therefore uncertain. This uncertainty can limit the apparent accuracy of a model even when a relationship with the underlying numerical sensitivity exists. In addition, the IEEE connectome may not contain all relevant information about how a processing workflow responds to perturbation. Numerical sensitivity may also depend on intermediate computations or computational conditions that are not represented in the final FC matrix.
+The controlled feature experiment compared three versions of this architecture:
 
-The next stage will investigate whether prediction can be improved. However, exact numerical prediction is not the only potentially useful outcome. If the uncertainty of the target or missing sensitivity information places a practical limit on magnitude prediction, the work will evaluate whether participants can instead be ranked reliably by NV or classified as having comparatively high numerical sensitivity. Identifying highly sensitive participants would still provide a practical basis for directing computationally expensive MCA analyses toward the cases in which they are most needed.
+\begin{description}
+    \item[M0: FC only.] The BrainNetCNN encoder received the signed IEEE FC matrix and provided the reference prediction.
+    \item[M1: FC + proximity.] M1 supplemented the FC representation with summaries describing how close the IEEE connections were to the graph threshold.
+    \item[M2: FC + proximity + influence.] M2 additionally included summaries describing how much each graph measure would change following a hypothetical toggle of a near-threshold edge.
+\end{description}
 
-\section{Expected contribution}
+Figure~\ref{fig:brainnetcnn-architecture} summarizes the three regression architectures. M0, M1, and M2 were trained as separate models; within M1 or M2, the FC encoder was shared across the nine outcomes, whereas the auxiliary branches were metric-specific.
 
-This phase will determine whether information available from a single standard connectome can be used to anticipate the numerical fragility of derived graph measures. It will connect the mechanistic evidence on threshold crossing and network topology with a practical prediction problem. A successful approach could make numerical-stability assessment more accessible by providing either an estimate of NV or a reliable indication of which participants are most likely to be sensitive. If prediction remains limited, the results will still clarify which aspects of numerical sensitivity are absent from the standard connectome and where direct perturbation-based evaluation remains necessary.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{BrainNetCNN_M0_M1_M2_architecture.pdf}
+    \caption{Architecture of the controlled BrainNetCNN comparison. All three models predict nine continuous NV outcomes from a signed IEEE FC matrix. M0 uses the FC encoder alone. M1 adds metric-specific threshold-proximity branches, and M2 adds metric-specific proximity and structural-influence branches. In M1 and M2, the FC and auxiliary contributions are combined additively and trained jointly. E2E: edge-to-edge operation; E2N: edge-to-node operation.}
+    \label{fig:brainnetcnn-architecture}
+\end{figure}
+
+\subsection{Auxiliary features and model fusion}
+
+For an IEEE connection $A_{s,e}$ and graph threshold $\tau$, its distance from the decision boundary was defined as
+\begin{equation}
+    m_{s,e}^{(\tau)}=\left|\,|A_{s,e}|-\tau\right|.
+    \label{eq:edge-margin}
+\end{equation}
+M1 summarized these distances using the proportions of edges lying within several narrow intervals around the threshold and quantiles of the full margin distribution. These features describe the number of connections susceptible to threshold crossing, but do not assume that every nearby edge will switch under MCA.
+
+M2 also estimated the potential consequence of such a switch. Candidate connections close to the threshold were toggled one at a time in the IEEE graph, and their metric-specific structural influence was defined as
+\begin{equation}
+    I_{s,e}^{(g,\tau)}
+    =g\!\left(B_s^{(\tau)}\oplus e\right)
+     -g\!\left(B_s^{(\tau)}\right),
+    \label{eq:edge-influence}
+\end{equation}
+where $B_s^{(\tau)}\oplus e$ denotes the graph after adding an absent edge or removing a present edge. For regional measures, summaries also captured the absolute and root-mean-square changes across regions so that opposing regional effects did not cancel. The resulting auxiliary inputs summarized the magnitude and distribution of influence among near-threshold edges rather than supplying one feature for every edge.
+
+Let $f_{\theta}(A_s)$ denote the representation learned from FC by BrainNetCNN. The FC-only model predicted standardized NV as
+\begin{equation}
+    \widehat{z}_{s,g}^{\mathrm{M0}}
+    =w_g^{\mathsf T}f_{\theta}(A_s)+b_g.
+\end{equation}
+For M1 and M2, a small metric-specific multilayer perceptron transformed the corresponding auxiliary vector $a_{s,g}$, and its output was combined additively with the FC contribution:
+\begin{equation}
+    \widehat{z}_{s,g}^{\mathrm{M1/M2}}
+    =w_g^{\mathsf T}f_{\theta}(A_s)+b_g
+     +\operatorname{MLP}_g(a_{s,g}).
+    \label{eq:model-fusion}
+\end{equation}
+The FC encoder and auxiliary branches were trained jointly. Thus, M1 and M2 learned new prediction models; their auxiliary terms were not post-hoc corrections applied to fixed M0 predictions.
+Each auxiliary branch contained two hidden linear layers of width 16, with a ReLU activation and dropout of 0.1, followed by a scalar linear output. Missing-value indicators were included alongside the auxiliary summaries. M1 therefore supplied 12 proximity features and 12 corresponding indicators to each metric-specific branch, whereas M2 supplied 63 proximity/influence features and 63 indicators. Within each M1 or M2 model, one FC encoder was shared across all outcomes and nine metric-specific auxiliary branches learned their respective additions to the FC-based predictions.
+
+\subsection{Subject-level evaluation}
+
+The original ten subject-level folds were stratified to balance lower and higher variability using a composite of NV percentile ranks across nonconstant metrics, with up to five strata. Inner validation was also stratified and used only subjects in the corresponding outer-training partition. At each graph threshold, M0, M1, and M2 reused identical saved splits, and all repetitions belonging to a participant remained in the same partition. Performance was summarized using held-out $R^2$, prediction error, and Spearman correlation. Multiple training seeds assessed optimization variability, but were not treated as independent cohorts.
+
+\subsection{Prediction of high numerical variability}
+
+A complementary experiment examined whether the models could identify participants with unusually high NV even when precise prediction of its magnitude was difficult. This experiment was formulated as continuous score prediction rather than direct binary classification: separate BrainNetCNN and ridge-regression models learned a relative NV percentile score from 0 to 100 for each variable metric--threshold target. For BrainNetCNN, the signed FC matrix passed through edge-to-edge and edge-to-node operations, a dense layer, dropout, and a sigmoid output scaled to the percentile range. Ridge regression provided a regularized linear comparison using the 4,950 unique FC values.
+
+High-NV labels were used only to evaluate the resulting scores. High NV was defined relative to the 90th percentile estimated from the corresponding outer-training participants, and screening performance was evaluated on held-out participants. Spearman correlation assessed ordering across the full NV range, whereas average precision and recall among the highest-scored 10\% assessed prioritization of the most sensitive participants. A direct high-NV classifier remains a possible future extension and should be compared with percentile-score regression using identical data splits and model-selection procedures.
+
+\section{Preliminary results}
+
+Adding threshold-proximity features produced the most consistent improvement. Across the 23 nonconstant metric--threshold combinations, M1 improved mean held-out $R^2$ over M0 in 22. M2 improved over M0 in 19 combinations and produced substantial gains for selected outcomes, including betweenness at threshold 0.5. These descriptive comparisons are shown in Figure~\ref{fig:m0-m1-m2}; they do not establish statistical superiority.
+
+\begin{figure}[p]
+    \centering
+    \includegraphics[width=\textwidth]{Figure8_M0_M1_M2_R2.png}
+    \caption{Preliminary pooled participant-held-out $R^2$ for the FC-only model (M0), the FC-plus-proximity model (M1), and the FC-plus-proximity-and-influence model (M2). Bars show means and whiskers show sample standard deviations across three training seed settings. Constant-NV outcomes have undefined $R^2$. Red boundary markers identify M2 results outside the displayed range, including severe failures for global efficiency and path length at threshold 0.2 and eigenvector centrality at threshold 0.5.}
+    \label{fig:m0-m1-m2}
+\end{figure}
+
+The M2 failures are central to interpreting the experiment. Nearly constant structural-influence features in the training data were greatly amplified by standardization for global efficiency and path length at threshold 0.2. At threshold 0.5, an extreme held-out influence feature caused a separate eigenvector-centrality failure. Structural influence therefore appears promising for selected measures, but its current representation and scaling are not sufficiently robust for general use.
+
+The high-NV experiment produced a related result. Both BrainNetCNN and ridge regression provided useful NV ordering for many targets, but identifying the extreme tail was more difficult than ranking the full cohort. Across the 23 variable targets, both models showed above-chance overall ranking for 21 targets in the exploratory permutation analysis. Evidence of above-chance high-NV screening was observed for 13 BrainNetCNN targets and 16 ridge targets. Ridge had higher mean average precision in 19 of the 23 descriptive comparisons, although no multiplicity-adjusted comparison established that either model was superior. The main takeaway is therefore that a single IEEE connectome carries useful information about relative NV for several graph measures, while high-NV screening remains incomplete and dependent on the metric and threshold.
+
+\section{Discussion and future work}
+
+The results strengthen the mechanistic link between threshold crossing and graph-measure NV. Threshold proximity was a comparatively consistent addition to FC-only learning, supporting the hypothesis that the IEEE connectome contains information about subsequent numerical fragility. Structural influence adds a second relevant component by representing where vulnerable edges occur and how strongly their hypothetical removal or addition changes a graph measure. Its occasional large gains suggest that edge location matters, but the severe M2 failures show that this information must be represented more safely.
+
+Several factors may limit prediction. First, the response to MCA perturbation is stochastic. This does not make its variability inherently unpredictable, but it introduces uncertainty into targets estimated from only eight to ten realizations. Second, the final IEEE connectome may omit sensitivity information from intermediate preprocessing computations or the computational environment. Third, a model can achieve a high Spearman correlation by ordering most participants correctly while still missing individuals in the extreme high-NV tail. Magnitude prediction, cohort-wide ranking, and high-NV screening should therefore be treated as related but distinct objectives.
+
+...

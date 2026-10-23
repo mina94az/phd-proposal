@@ -1,12 +1,12 @@
 \chapter{Numerical variability of functional MRI graph measures}
 \label{chap:phase-one}
 
-\section*{Abstract}
+\section{Abstract}
 Network neuroscience provides a powerful framework for studying the mechanisms underlying brain-related diseases. As analyses become increasingly computational, ensuring their numerical reliability has become a critical challenge. Small perturbations introduced during processing can propagate through complex pipelines, leading to variability in outcomes and raising concerns about the reproducibility of reported findings. Addressing this issue requires systematic evaluation of pipeline stability to ensure results remain within acceptable numerical limits. While the numerical variability of structural imaging workflows has been investigated, with findings ranging from negligible to substantial, functional MRI (fMRI) pipelines and their derived graph measures remain underexplored. Without rigorous stability assessment, conclusions drawn from these measures may remain uncertain. We systematically evaluated the numerical variability of graph measures of functional connectivity derived from the widely used fMRIPrep pipeline and compared it to population variability. The resulting Numerical-Population Variability Ratio (\npvratio{}) values typically ranged from 0.02 to 0.19 for most graph metrics, indicating a measurable influence of numerical variability on network-derived outcomes. \npvratio{} values varied across brain regions, thresholding choices, and confound regression strategies. For results close to the significance threshold, propagation of the observed \npvratio{} values indicated an average 17.7\% probability that numerical variability would change a result from significant to non-significant, or vice versa.\ These findings highlight numerical variability as an important factor in functional network studies, particularly when examining subtle effects or working with small sample sizes.
-\section*{Materials and methods}
+\section{Materials and methods}
 We applied the widely used fMRIPrep preprocessing pipeline to fMRI data from the PPMI dataset to assess numerical variability, focusing on cross-sectional analyses. Numerical variability was evaluated using Monte Carlo Arithmetic (MCA)~\cite{Parker1997MCA,Denis2016Verificarlo}, a technique that characterizes the sensitivity of a computational pipeline to small numerical perturbations. By repeatedly perturbing floating-point operations, MCA enables us to quantify how much variability arises purely from numerical errors. We then examined how these perturbations propagate into derived graph measures and compared the resulting numerical variability to inter-individual variability, evaluating its potential impact on downstream statistical analyses.
 
-\subsection*{Ethics statement}
+\subsection{Ethics statement}
 Concordia University's Office of Research confirmed that this project was
 exempt from institutional research ethics approval. The analyses were
 conducted in accordance with the PPMI Data Use Agreement. The PPMI data were
@@ -15,14 +15,14 @@ boards at participating sites, and all participants provided written informed
 consent.
 
 
-\subsection*{Dataset}
+\subsection{Dataset}
 We used data from the \textit{Parkinson Progression Marker Initiative} (PPMI) \cite{PPMI2011}, an ongoing, international, multicenter observational study designed to identify biomarkers of Parkinson’s disease (PD). From the PPMI cohort, we selected individuals with available resting-state fMRI (rs-fMRI) data, including both Parkinson’s disease (PD) patients and healthy control (HC) participants.
 The PPMI dataset used in this study was acquired across multiple imaging sites using 3T MRI scanners from different manufacturers, including Siemens, GE Healthcare, and Philips. The scanner manufacturers and models represented in the resting-state fMRI and structural MRI datasets are summarized in Table A in S1 File.
 PPMI provides multiple rs-fMRI acquisitions using 2D gradient-echo T2*-weighted EPI with different acquisition configurations (e.g., \texttt{epi\_2d}, RL, PA) and phase-encoding directions. To avoid additional variability introduced by mixing acquisition types and phase-encoding directions, we restricted our analysis to the RL runs only, including 38 of healthy controls and 147 of PD patients. The RL rs-fMRI acquisition consists of 240 volumes with 10 min total scan time, with a repetition time (TR) of 2500~ms, an echo time (TE) of 30~ms, a slice thickness of 3.5~mm, 40 axial slices, a field of view (FOV) of $224 \times 224$~mm, and a matrix size of $64 \times 64$. Participants were instructed to keep their eyes open and remain still during the scan.
 Since the data were in DICOM format, they were converted to NIfTI format using the HeuDiConv conversion framework (version 1.2) to enable compatibility with the preprocessing pipeline, which requires BIDS-validated input data.
 
 The data were accessed multiple times between August and  September 2024, and we did not receive access to identifiable information.
-\subsection*{Data processing}
+\subsection{Data processing}
 All anatomical and functional data were preprocessed using \textit{fMRIPrep} (version 23.2.1). Anatomical T1-weighted images underwent intensity non-uniformity correction, skull stripping, tissue segmentation, and nonlinear normalization to the MNI152NLin2009cAsym template.
 
 Functional preprocessing included the generation of a BOLD reference volume, head-motion correction, and co-registration of the BOLD reference to the T1-weighted image using boundary-based registration. The corrected BOLD time series were subsequently transformed into MNI space using the composed anatomical and functional transformations. fMRIPrep also produced a comprehensive set of confound regressors, including motion parameters, framewise displacement (FD), DVARS, global signals, and components derived from aCompCor and tCompCor. All spatial resampling steps were combined into a single interpolation using the composed transforms. 
@@ -37,7 +37,7 @@ Two versions of the functional connectome were therefore constructed for each su
 
 For each version, Pearson correlation matrices were computed using Nilearn’s \texttt{ConnectivityMeasure} (kind=\texttt{"correlation"}), yielding one functional connectivity matrix per subject per MCA run.
 
-\subsection*{Graph construction and graph-theoretical measures}
+\subsection{Graph construction and graph-theoretical measures}
 After generating functional connectomes, the resulting matrices were thresholded based on absolute correlation values, as commonly performed in resting-state functional connectivity studies, and converted into binary, undirected adjacency matrices.
 
 Specifically, absolute correlation thresholds of 0.05, 0.1, 0.2, 0.3, 0.4, and 0.5 were applied. An edge was assigned between regions \(i\) and \(j\) whenever
@@ -60,7 +60,7 @@ From these networks, we computed four local graph metrics: degree centrality, cl
 
 For global topology, we computed the \textbf{average shortest path length}, which measures the efficiency of information integration across the entire network, and \textbf{small-worldness}, defined using normalized clustering and path-length relative to matched random networks, capturing the balance between segregation and integration characteristic of small-world architecture~\cite{Jinping2017Graphtheory}. Together these metrics summarize a variety of information transmission qualities of the network.
 
-\subsection*{Evaluation of numerical variability}
+\subsection{Evaluation of numerical variability}
 
 
 Fuzzy libmath is a lightweight implementation that restricts MCA perturbations to the outputs of elementary mathematical library functions, such as \texttt{exp}, \texttt{log}, \texttt{sin}, and \texttt{cos}, whose implementations may vary across mathematical libraries, operating systems, hardware architectures, and execution settings~\cite{Glatard2015}. Fuzzy libmath was loaded using the \texttt{LD\_PRELOAD} mechanism, which intercepts calls to the standard mathematical library and redirects them to the instrumented implementation. Targeting these functions therefore provides a practical model of machine-level numerical variability while limiting instrumentation overhead~\cite{Salari2021}. The virtual precision was set to \(t=24\) bits for binary32 values and \(t=53\) bits for binary64 values. Thus, perturbations were introduced at the least significant bit of the corresponding native floating-point representation.
@@ -71,7 +71,7 @@ Across the 10 repetitions, the input images, software versions, and processing p
 On these datasets, MCA to IEEE wall-clock processing time was 1.29. Thus, a single MCA execution
 required approximately 29\% more wall-clock time than the corresponding IEEE execution. The aggregate processing requirement of the 10 MCA repetitions was approximately 12.9 times that of one IEEE execution.
 
-\subsection*{Numerical variability measures}
+\subsection{Numerical variability measures}
 To evaluate the impact of numerical variability on graph measures, we used the Numerical–Population Variability Ratio (NPVR or $\nu_{\text{npv}}$), a framework developed in~\cite{Yohan2025NPVR}. This framework quantifies numerical variability relative to variability across subjects, providing a formal comparison between the variability induced by MCA perturbations and the variability observed across subjects.
 \newline
 The \npvr is defined as:
@@ -102,7 +102,7 @@ compromises the detection of true population differences. $\nu_{\text{npv}}$ can
 This relation formalizes how numerical variability impacts the reliability of downstream inferences.
 The numerical variability of other classical statistics, including the t-statistic and the F-statistic, as well as of their associated p-values, can also be expressed as a function of $\text{\npvr}$.
 
-\subsection*{Propagation of \npvratio{} to downstream statistical inference}
+\subsection{Propagation of \npvratio{} to downstream statistical inference}
 
 To translate the observed \npvratio{} values into measures of statistical-inference variability, we propagated the \npvratio{} associated with each graph metric and network threshold to statistics commonly used in neuroimaging. These included Cohen's \(d\), the two-sample \(t\)-test, partial correlation, and ANCOVA. The first-order propagation formulas developed in~\cite{Yohan2025NPVR} were used to estimate the numerical standard deviation of each statistic and, where applicable, the numerical uncertainty of its associated \(p\)-value, denoted by \(\sigma_p\). The formulas are summarized in Table B in S1 File, and their complete mathematical derivations and numerical validation are provided in~\cite{Yohan2025NPVR}.
 
@@ -121,8 +121,8 @@ where \(F_{\mathrm{Beta}}(\alpha;a,b)\) is the cumulative distribution function 
 For a nominally significant result, \(P_{\mathrm{flip}}\) represents the probability that numerical variability shifts the \(p\)-value above the significance threshold, indicating false-positive risk. For a nominally non-significant result, it represents the probability that numerical variability shifts the \(p\)-value to or below the threshold, indicating false-negative risk. These labels describe instability of the nominal significance classification rather than classical Type~I or Type~II error rates because the underlying ground truth is unknown. The distance from the significance threshold was expressed as \(p_0-\alpha\).
 
 
-\section*{Results}
-\subsection*{The influence of numerical variability on statistical inference}
+\section{Results}
+\subsection{The influence of numerical variability on statistical inference}
 To illustrate how numerical noise can influence statistical inference and experimental design, we generated a series of simulations (Fig.~\ref{fig1}). As shown in Figs.~\ref{fig1}A--B, two synthetic populations of ten subjects each were generated under ``low'' and ``high'' within-individual variability conditions with identical underlying subject-level means. These scenarios emulate differences in the numerical variability of derived measurements and allow us to quantify their effects on inference.  
 
 \begin{figure}[!h]
@@ -154,7 +154,7 @@ uncertainty in estimated effect sizes and require larger sample sizes to attain
 the same level of numerical precision as analyses with lower \npvratio{}
 values.
 
-\subsection*{Numerical variability varies across graph statistics and network thresholding decisions}
+\subsection{Numerical variability varies across graph statistics and network thresholding decisions}
 
 Figs.~\ref{fig2} and~\ref{fig3} present the NPVR of local and global graph metrics across network
 thresholds. For each metric, each plot shows the mean NPVR for the pooled
@@ -211,7 +211,7 @@ Because the pooled sample contained substantially more PD than HC participants
 PD estimates than to the HC estimates.
 
 
-\subsection*{Regional variation in normalized regional \npvratio{} maps across metrics and thresholds interacts with threshold decisions}
+\subsection{Regional variation in normalized regional \npvratio{} maps across metrics and thresholds interacts with threshold decisions}
 Fig.~\ref{fig4} shows regional maps of the \npvratio{} (numerical-to-inter-subject variability) for the four local graph metrics across thresholds. 
 Overall, the \npvratio{} is spatially heterogeneous and depends both on the metric and on the applied threshold.  
 %For lower thresholds (e.g., $0.1$), most regions exhibit lower \npvratio{}, while at higher thresholds (e.g., $0.5$), \npvratio{} becomes more pronounced and spatially localized—particularly in specific regions for the betweenness centrality and clustering coefficient.  
@@ -230,7 +230,7 @@ Consequently, inference drawn from regional graph metrics—such as node-level c
 
 Regional \npvratio{} maps were also generated separately for the PD and HC groups and are provided in Figs A and B in S1 File. The same key conclusions applied across both populations: \npvratio{} exhibited a spatially heterogeneous distribution, and this heterogeneity varied with both the graph metric and the graph threshold.
 
-\subsection*{Trade-offs of using confound removal}
+\subsection{Trade-offs of using confound removal}
 
 To assess the influence of confound regression on the numerical variability of the
 graph metrics, we compared the results obtained from the \textit{with-confound}
@@ -309,7 +309,7 @@ derived functional connectomes.
 
 Additional results for the combined PD+HC sample and the separate PD and HC groups, showing differences in population variability, numerical variability, and regional \npvratio{} between the no-confound and with-confound pipelines across local graph metrics, are provided in Figs C--H in S1 File.
 
-\subsection*{\npvratio{} affects downstream statistical inference}
+\subsection{\npvratio{} affects downstream statistical inference}
 \label{sec:impact}
 
 Fig.~\ref{fig7} shows the estimated probability that numerical
@@ -379,7 +379,7 @@ choices, graph metric, and computational environment. Whenever possible,
 \npvratio{} should therefore be estimated for the specific pipeline and
 outcome under consideration.
 
-\section*{Discussion}
+\section{Discussion}
 The reliability of quantitative network neuroscience depends not only on accurate mapping of functional connectivity but also on the stability of the derived measures. While methodological discussions typically emphasize sample size, biological variability, and effect size, measurement noise from computational sources remains largely unaddressed. We showed that numerical variability originating from floating-point arithmetic can influence functional connectomes and graph metrics. Through the Numerical-Population Variability Ratio (NPVR), we quantified this computational noise relative to inter-subject differences, framing numerical variability in statistical terms commonly used to evaluate biological effects.
 
 Our findings reveal that numerical variability is not uniform and varies across metrics, thresholds, and spatial locations.
@@ -410,7 +410,7 @@ Overall, our results position numerical variability as an important factor in
 network-neuroscience studies, particularly when investigating subtle effects
 or interpreting statistical results close to a decision threshold.
 
-\section*{Conclusion}
+\section{Conclusion}
 
 In this study, we examined the numerical variability of fMRI-derived graph
 metrics using data from the Parkinson's Progression Markers Initiative (PPMI)

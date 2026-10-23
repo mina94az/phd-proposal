@@ -1,0 +1,71 @@
+digraph BrainNetCNNArchitecture {
+    graph [
+        rankdir=TB,
+        bgcolor="white",
+        pad=0.18,
+        nodesep=0.28,
+        ranksep=0.42,
+        splines=ortho,
+        fontname="Helvetica",
+        fontsize=14,
+        labelloc="t",
+        label="Prediction of continuous numerical variability"
+    ];
+    node [
+        shape=box,
+        style="rounded,filled",
+        color="#334155",
+        fillcolor="#F8FAFC",
+        fontname="Helvetica",
+        fontsize=10,
+        margin="0.13,0.08"
+    ];
+    edge [color="#475569", penwidth=1.25, arrowsize=0.65];
+
+    input [label="Signed IEEE functional connectivity\n100 × 100 matrix", fillcolor="#DBEAFE", color="#2563EB"];
+
+    subgraph cluster_m0 {
+        label="M0 — FC only";
+        color="#94A3B8";
+        style="rounded";
+        m0_fc [label="BrainNetCNN FC encoder\nE2E → E2N → dense → dropout", fillcolor="#E0F2FE", color="#0284C7"];
+        m0_out [label="Linear output layer\n9 continuous NV predictions", fillcolor="#DCFCE7", color="#16A34A"];
+        m0_fc -> m0_out;
+    }
+
+    subgraph cluster_m1 {
+        label="M1 — FC + threshold proximity";
+        color="#94A3B8";
+        style="rounded";
+        m1_fc [label="BrainNetCNN FC encoder\n(shared across 9 outcomes)", fillcolor="#E0F2FE", color="#0284C7"];
+        m1_aux [label="12 proximity summaries\n+ 12 missing indicators", fillcolor="#FEF3C7", color="#D97706"];
+        m1_mlp [label="9 metric-specific MLPs\n16 → 16 → 1", fillcolor="#FFEDD5", color="#EA580C"];
+        m1_add [label="Add FC and\nauxiliary contributions", shape=diamond, fillcolor="#F3E8FF", color="#9333EA"];
+        m1_out [label="9 continuous\nNV predictions", fillcolor="#DCFCE7", color="#16A34A"];
+        m1_fc -> m1_add;
+        m1_aux -> m1_mlp -> m1_add;
+        m1_add -> m1_out;
+        {rank=same; m1_fc; m1_aux}
+    }
+
+    subgraph cluster_m2 {
+        label="M2 — FC + proximity + structural influence";
+        color="#94A3B8";
+        style="rounded";
+        m2_fc [label="BrainNetCNN FC encoder\n(shared across 9 outcomes)", fillcolor="#E0F2FE", color="#0284C7"];
+        m2_aux [label="63 proximity/influence summaries\n+ 63 missing indicators", fillcolor="#FEF3C7", color="#D97706"];
+        m2_mlp [label="9 metric-specific MLPs\n16 → 16 → 1", fillcolor="#FFEDD5", color="#EA580C"];
+        m2_add [label="Add FC and\nauxiliary contributions", shape=diamond, fillcolor="#F3E8FF", color="#9333EA"];
+        m2_out [label="9 continuous\nNV predictions", fillcolor="#DCFCE7", color="#16A34A"];
+        m2_fc -> m2_add;
+        m2_aux -> m2_mlp -> m2_add;
+        m2_add -> m2_out;
+        {rank=same; m2_fc; m2_aux}
+    }
+
+    input -> m0_fc;
+    input -> m1_fc;
+    input -> m2_fc;
+    input -> m1_aux [style=dashed, label=" IEEE-derived", fontname="Helvetica", fontsize=8];
+    input -> m2_aux [style=dashed, label=" IEEE-derived", fontname="Helvetica", fontsize=8];
+}
