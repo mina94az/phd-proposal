@@ -25,7 +25,8 @@ jobs:
           root_file: main.tex
           compiler: latexmk
           args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
-          texlive_version: 2022
+          texlive_version: 2026
+          os: debian
 
       - name: Verify compiled PDF
         shell: bash
