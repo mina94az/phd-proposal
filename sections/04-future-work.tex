@@ -3,124 +3,138 @@
 
 \section*{Abstract}
 
-Numerical perturbations introduced during fMRI preprocessing can propagate to functional connectivity (FC) and its derived graph measures. Assessing this numerical variability (NV) is important, as previous findings have shown that NV in fMRI graph measures is measurable and may affect statistical conclusions, particularly when observed effects are close to statistical decision thresholds, potentially leading to false-positive or false-negative findings. However, directly quantifying NV using Monte Carlo Arithmetic (MCA) requires repeated preprocessing runs, making it computationally expensive and potentially impractical for routine studies. 
-This phase investigates whether NV can be predicted from the FC matrix produced by a single standard IEEE execution. The current analysis focuses on 152 participants with Parkinson's disease and uses the retained MCA repetitions to define participant-level NV targets. Random forests, ridge regression, and a compact BrainNetCNN model were explored. A controlled BrainNetCNN experiment further compared an FC-only baseline (M0), FC supplemented with threshold-proximity features (M1), and FC supplemented with proximity and metric-specific structural-influence features (M2). Preliminary results indicate that proximity features improve prediction for most nonconstant graph-metric and threshold combinations. Structural-influence features provide additional gains for some outcomes but also produce important numerical and extrapolation failures. A complementary experiment suggests that the IEEE connectome contains useful information for ranking participants by NV, although identifying the most sensitive participants remains more difficult. These findings motivate further development of a robust prediction or screening approach rather than establishing a finalized model.
+Numerical perturbations introduced during fMRI preprocessing can propagate to functional connectivity (FC) and its derived graph measures. Assessing this numerical variability (NV) is important because it may affect statistical conclusions, particularly when observed effects are close to decision thresholds, potentially contributing to false-positive or false-negative findings. However, directly quantifying NV using Monte Carlo Arithmetic (MCA) requires repeated preprocessing runs and may be impractical for routine studies.
+
+This phase investigates whether NV can be predicted from the FC matrix produced by a single standard IEEE execution. The current feasibility analysis focuses on 146 participants with Parkinson's disease and uses retained MCA repetitions only to define participant-level NV targets. Two complementary initial models are considered: M0, a BrainNetCNN model that learns directly from the complete signed FC matrix, and Ridge regression using a compact vector of nine IEEE-derived features. These features summarize threshold proximity, graph density, and the structural consequences of potential edge changes. Across the six reported graph measures and three thresholds, the updated Ridge model produced higher held-out $R^2$ than M0 for 17 of 18 endpoints and higher Spearman correlation for 16. Because the explicit validity-fraction feature was removed after inspection of an earlier held-out failure, these findings remain exploratory and require confirmation in untouched data.
 
 \section{Introduction}
 
-Phase~I demonstrated that NV in fMRI graph measures is measurable and can influence conclusions when an observed effect is close to a decision threshold. Although repeated MCA executions provide an empirical estimate of this uncertainty, their computational cost and specialized instrumentation limit routine use. The main question of the present phase is therefore:
+Phase~I demonstrated that NV in fMRI graph measures is measurable and can influence statistical conclusions. Although repeated MCA executions provide an empirical estimate of this uncertainty, their computational cost and specialized instrumentation limit routine use. The main research question of the present phase is therefore:
 
 \begin{quote}
 \emph{Can the numerical variability of graph measures be predicted from the functional connectome produced by a single standard IEEE execution?}
 \end{quote}
 
-MCA perturbations affect FC in a structured and non-uniform manner. Connections close to the graph-construction threshold are more likely to change their inclusion status, thereby converting small FC perturbations into topological changes. The consequence also depends on the location of an affected edge: changing an edge with an influential network position may alter a graph measure more than changing another edge by the same amount. Binary graph NV was attributable to these topological changes, whereas weighted graph NV reflected changes in both topology and edge weights. Thus, the IEEE connectome may contain information about numerical sensitivity through edge magnitude, threshold proximity, and network organization.
+This question is plausible because MCA perturbations do not affect FC uniformly. Connections close to a graph threshold are particularly susceptible to changing their inclusion status, and the consequence depends on the network location of the affected connection. Thus, a standard IEEE connectome may contain information about numerical sensitivity through its complete FC organization, threshold proximity, and the structural consequences of potential edge changes.
 
-Randomness does not make this prediction problem inherently impossible. Individual MCA perturbations are stochastic, but their variance may still depend systematically on observable properties of the input. The objective is to determine whether the IEEE connectome contains sufficient information to estimate NV magnitude or, at minimum, to identify participants with comparatively high numerical sensitivity.
+The present work evaluates two initial representations of this information. M0 asks whether a connectome-oriented neural network can learn NV directly from the complete FC matrix. Ridge regression asks whether a compact nine-feature representation is sufficient for prediction. These models establish preliminary baselines from which a more robust prediction or high-sensitivity screening method can be developed.
 
-\section{Data}
+\section{Data and methodology}
 
-The analysis reused the PPMI data and processing outputs described in Chapter~\ref{chap:phase-one}, but was restricted to the Parkinson's disease population. A deliberately minimal quality-control protocol was applied to exclude only clear acquisition or processing failures. Each resting-state fMRI acquisition was expected to contain 240 volumes; two participants with severely incomplete series, containing only 92 and 13 volumes, respectively, were excluded. Participants were also excluded when spatial registration failed or when visual inspection revealed gross image-integrity defects, including large signal voids or pronounced spatial discontinuities in the processed images. Within retained acquisitions, volumes flagged as unsteady by the volume-level quality-control procedure were excluded before FC estimation.
+\subsection{Data, quality control, and prediction targets}
 
-Following quality control and matching, the cohort contained 152 participants with both a valid IEEE reference connectome and retained MCA outputs. Two failed IEEE executions and seven failed MCA repetitions were excluded. Consequently, 146 participants retained ten MCA repetitions, five retained nine, and one retained eight. No participant was excluded on the basis of NV magnitude or prediction error.
+The analysis reused the PPMI data and processing outputs described in Chapter~\ref{chap:phase-one} and was restricted to the Parkinson's disease population. A deliberately minimal quality-control protocol excluded only clear acquisition or processing failures. Each resting-state acquisition was expected to contain 240 volumes; two participants with severely incomplete series of 92 and 13 volumes were excluded. Participants were also excluded when spatial registration failed or visual inspection revealed gross image-integrity defects, including large signal voids or pronounced spatial discontinuities. Within retained acquisitions, volumes flagged as non-steady-state were excluded before FC estimation.
+After quality control and matching to the current prediction cohort, 146 participants had a valid IEEE connectome and retained MCA outputs. Of these, 140 had ten retained MCA repetitions, five had nine, and one had eight.
 
-Each participant was represented by a signed $100\times100$ IEEE FC matrix based on the Schaefer parcellation, corresponding to 4,950 unique connections. Graph measures were evaluated at absolute-correlation thresholds of 0.05, 0.2, and 0.5. The prediction targets comprised four regional measures---degree centrality, betweenness centrality, eigenvector centrality, and clustering coefficient---and five global measures: global efficiency, number of connected components, largest-component fraction, average shortest path length, and small-worldness.
+As an initial feasibility experiment, the models were evaluated at three of the six absolute-correlation thresholds examined in Chapter~\ref{chap:phase-one}: 0.05, 0.20, and 0.50. We report the same six binary graph measures: degree centrality, betweenness centrality, clustering coefficient, and eigenvector centrality as local measures, and average shortest path length and small-worldness as global measures. The prediction target was the MCA-derived numerical variability of each graph measure. For a local measure, its standard deviation across retained MCA repetitions was calculated separately at each of the 100 regions and then averaged across regions. For a global measure, the target was its standard deviation across repetitions. All reported targets were available for 146 participants except average shortest path length and small-worldness at threshold 0.50, for which 116 participants had finite targets. The preliminary models therefore attempt to predict participant-level graph-measure variability from a single IEEE connectome, without requiring MCA repetitions at prediction time.
 
-For participant $s$, graph measure $g$, and threshold $\tau$, the target $y_{s,g}^{(\tau)}$ was the standard deviation of the graph measure across the participant's retained MCA repetitions. For regional measures, the standard deviation was calculated separately at each region and then averaged across the 100 regions. The FC matrix from the single IEEE execution was the predictor; MCA-derived quantities were used only to construct and evaluate the target.
+\subsection{Initial prediction models}
 
-\section{Methods}
-
-\subsection{Prediction models}
-
-The controlled comparison used four BrainNetCNN-based regressors and one regularized linear control. BrainNetCNN preserves the relational structure of a connectome through edge-to-edge and edge-to-node operations rather than treating the 4,950 connections as unrelated predictors \cite{Kawahara2017BrainNetCNN}. The signed $100\times100$ IEEE FC matrix passed through these operations and LeakyReLU activations, followed by a dense layer, dropout, and nine standardized NV outputs. Filter counts, hidden width, dropout, learning rate, and weight decay were selected by inner validation.
-
-Each model was included to answer a distinct question:
-
-\begin{description}
-    \item[M0: FC only.] This baseline tests how much NV information can be learned directly from the complete standard connectome.
-    \item[M1: FC + proximity.] M1 tests whether prediction improves when the model is told how many IEEE connections lie close to the graph threshold and may therefore change graph inclusion under a small perturbation.
-    \item[M2: FC + proximity + influence.] M2 also describes the potential metric-specific consequence of changing a near-threshold edge, thereby representing both susceptibility to threshold crossing and the network location of susceptible edges.
-    \item[M2\textsubscript{refined}: stabilized M2.] This model adds graph density and robust auxiliary-feature transformations. It was introduced after diagnostic analyses showed that nearly constant training features and wide positive feature ranges could yield extreme standardized values in held-out participants.
-    \item[Ridge\textsubscript{aux}: auxiliary-only Ridge.] Ridge uses the refined auxiliary representation without the FC encoder. It provides an interpretable capacity control and tests whether engineered summaries alone explain NV.
-\end{description}
-
-All models predict continuous NV rather than classes. M0--M2\textsubscript{refined} were trained separately on identical subject partitions. Within each fused neural model, one FC encoder was shared across the nine outcomes and the auxiliary branches were metric-specific.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\textwidth]{BrainNetCNN_M0_M1_M2_architecture.pdf}
-    \caption{Architecture of the BrainNetCNN feature comparison. M0 uses the FC path alone; M1 and M2 add metric-specific auxiliary contributions. M2\textsubscript{refined} uses the same fused architecture as M2 with stabilized inputs and density. Ridge\textsubscript{aux}, not shown, uses only the refined auxiliary inputs. E2E: edge-to-edge operation; E2N: edge-to-node operation.}
-    \label{fig:brainnetcnn-architecture}
-\end{figure}
-
-\subsection{Auxiliary features and missing-data handling}
-
-For an IEEE connection $A_{s,e}$ and graph threshold $\tau$, its distance from the decision boundary was defined as
-\begin{equation}
-    m_{s,e}^{(\tau)}=\left|\,|A_{s,e}|-\tau\right|.
-    \label{eq:edge-margin}
-\end{equation}
-Here, $s$ indexes participants, $e$ indexes undirected connections, $A_{s,e}$ is the signed IEEE FC value of connection $e$ for participant $s$, and $\tau$ is the absolute-correlation threshold used to construct the graph. The inner absolute value removes the sign of the FC value, and the outer absolute value measures its distance from the threshold. Thus, a smaller $m_{s,e}^{(\tau)}$ indicates that the connection is closer to changing its inclusion status under a numerical perturbation.
-M1 used 12 proximity features: the fractions of edges within five narrow margins of the threshold and seven quantiles of the full margin distribution. These summaries describe potential threshold sensitivity without assuming that every nearby edge will switch under MCA.
-
-M2 additionally evaluated up to the 200 closest candidate edges within a margin of 0.02. Each candidate was toggled symmetrically in the IEEE graph, and its metric-specific structural influence was
-\begin{equation}
-    I_{s,e}^{(g,\tau)}
-    =g\!\left(B_s^{(\tau)}\oplus e\right)
-     -g\!\left(B_s^{(\tau)}\right),
-    \label{eq:edge-influence}
-\end{equation}
-Here, $I_{s,e}^{(g,\tau)}$ is the structural influence of connection $e$ on graph measure $g$ for participant $s$ at threshold $\tau$; $B_s^{(\tau)}$ is the participant's binary IEEE graph at that threshold; and $g(\cdot)$ denotes evaluation of the selected graph measure. The operator $\oplus e$ toggles connection $e$, adding it when absent and removing it when present. Accordingly, the difference compares the graph measure after this hypothetical edge change with its value in the original graph; its sign indicates the direction of change and its magnitude indicates the strength of the edge's influence. Signed, absolute, root-mean-square, distance-weighted, and coverage summaries retained both the direction and magnitude of these effects. Together with proximity, M2 supplied 63 features per metric; individual edge influences were intermediate calculations rather than model inputs.
-
-M2\textsubscript{refined} added graph density and stabilized the 45 nonnegative influence summaries using a training-derived logarithmic transformation. Missing values were imputed with training medians, and all scaling parameters were estimated from the applicable training partition. Nearly constant training columns were set to zero to prevent small training variances from amplifying held-out values.
-
-Auxiliary values can be missing when the baseline graph measure is undefined---particularly for path-based measures on disconnected graphs---or when an eligible edge toggle does not produce a finite measure. Missingness may therefore contain information about graph structure. A binary missing-value indicator was retained beside every feature rather than discarding affected participants. The auxiliary input sizes were consequently 24 for M1, 126 for M2, and 128 for M2\textsubscript{refined}.
-
-\subsection{Model fitting and subject-level evaluation}
-
-Let $f_{\theta}(A_s)$ denote the representation learned from FC by BrainNetCNN. The FC-only model predicted standardized NV as
+\paragraph{M0: complete FC matrix.}
+M0 provides the full-connectome baseline. It receives the complete symmetric, zero-diagonal IEEE FC matrix as a $1\times100\times100$ tensor, retaining the signed correlations without thresholding or engineered inputs. A BrainNetCNN encoder uses edge-to-edge and edge-to-node operations to preserve connectome organization \cite{Kawahara2017BrainNetCNN}, followed by a dense layer, LeakyReLU activations, dropout, and a shared output layer. The saved implementation was trained jointly on nine graph-measure targets, although only the six outcomes specified above are reported here. If $f_{\theta}(C_s)$ is the representation learned from participant $s$'s FC matrix, the prediction for measure $g$ is
 \begin{equation}
     \widehat{z}_{s,g}^{\mathrm{M0}}
-    =w_g^{\mathsf T}f_{\theta}(A_s)+b_g.
+    =\mathbf{w}_{g}^{\mathsf T}f_{\theta}(C_s)+b_g,
+    \label{eq:m0-prediction}
 \end{equation}
-For M1, M2, and M2\textsubscript{refined}, a small metric-specific multilayer perceptron transformed the corresponding auxiliary vector $a_{s,g}$, and its output was combined additively with the FC contribution:
+where $z_{s,g}$ is the training-standardized NV target, $\theta$ contains the shared encoder parameters, and $\mathbf{w}_g$ and $b_g$ are measure-specific output parameters. Four prespecified configurations varied the edge-to-edge channels (4 or 8), edge-to-node channels (8 or 16), hidden width (16 or 32), dropout (0.2--0.4), learning rate, and weight decay. Configuration and epoch were selected by inner validation. Training used AdamW, a masked SmoothL1 loss, and two outer-training refits whose inverse-scaled, nonnegative predictions were averaged. M0 is an initial benchmark rather than an optimized final architecture.
+
+\paragraph{M1 auxiliary features: threshold proximity and structural consequences of potential edge changes.}
+For each graph measure and threshold, Ridge regression receives a compact vector of nine features derived from the single IEEE connectome. Let $M=4{,}950$ be the number of possible undirected edges and let $d_e=\left|\,|C_e|-\tau\right|$ be edge $e$'s distance from threshold $\tau$. Candidate edges satisfy $d_e\leq0.02$, and at most the 200 closest are evaluated. If toggling candidate edge $e$ changes a local graph measure at region $i$ by $\delta_{e,i}$, its mean absolute and root-mean-square regional effects are $a_e=\operatorname{mean}_i|\delta_{e,i}|$ and $r_e=\sqrt{\operatorname{mean}_i\delta_{e,i}^2}$. For a global measure, $a_e=r_e=|\delta_e|$. Let $\mathcal{F}$ denote the candidate edges with finite responses and $K_{\mathrm{valid}}=|\mathcal{F}|$.
+
+\begin{table}[htbp]
+    \centering
+    \scriptsize
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.05}
+    \begin{tabular}{@{}p{0.25\textwidth} p{0.35\textwidth} p{0.34\textwidth}@{}}
+        \toprule
+        \textbf{Feature} & \textbf{Definition} & \textbf{Interpretation} \\
+        \midrule
+        Close-edge fraction & $M^{-1}\sum_e\mathbb{I}(d_e\leq0.005)$ & Fraction of all edges very close to the threshold. \\
+        Candidate-window fraction & $M^{-1}\sum_e\mathbb{I}(d_e\leq0.02)$ & Fraction of edges in the influence candidate window. \\
+        Lower-tail margin & $Q_{0.05}(\{d_e\})$ & Fifth percentile of the threshold-distance distribution. \\
+        Median margin & $Q_{0.50}(\{d_e\})$ & Typical distance of an edge from the threshold. \\
+        Graph density & $M^{-1}\sum_e\mathbb{I}(|C_e|\geq\tau)$ & Fraction of possible edges retained in the IEEE graph. \\
+        Mean absolute influence & $K_{\mathrm{valid}}^{-1}\sum_{e\in\mathcal{F}}a_e$ & Typical graph-measure response to a finite edge toggle. \\
+        Maximum RMS influence & $\max_{e\in\mathcal{F}}r_e$ & Largest RMS response among finite edge toggles. \\
+        Weighted absolute influence & $\sum_{e\in\mathcal{F}}e^{-d_e/0.005}a_e$ & Absolute influence emphasizing edges nearest the threshold. \\
+        Weighted squared RMS influence & $\sum_{e\in\mathcal{F}}e^{-d_e/0.01}r_e^2$ & Large RMS responses weighted by threshold proximity. \\
+        \bottomrule
+    \end{tabular}
+    \caption{Nine-feature vector used by the updated compact Ridge model.}
+    \label{tab:compact-ridge-features}
+\end{table}
+
+These nine variables were retained from the original compact representation without changing their definitions. The explicit finite-influence-fraction predictor and its missing-value indicator were removed in a follow-up analysis prompted by an extrapolation failure in the earlier ten-feature model. The quantities $K_{\mathrm{valid}}$ and baseline availability remain part of the influence calculations but are not supplied as separate predictors.
+
+\paragraph{Compact Ridge regression.}
+A separate Ridge model is fitted for every measure and threshold using the nine features above. Each numeric feature is accompanied by a binary missing-value indicator, giving a fixed 18-slot processed representation. Let $\widetilde{\boldsymbol{\phi}}_{s,g}^{(\tau)}\in\mathbb{R}^{18}$ denote this representation and $z_{s,g}^{(\tau)}$ the training-standardized NV target. The model is
 \begin{equation}
-    \widehat{z}_{s,g}^{\mathrm{fused}}
-    =w_g^{\mathsf T}f_{\theta}(A_s)+b_g
-     +\operatorname{MLP}_g(a_{s,g}).
-    \label{eq:model-fusion}
+    \widehat{z}_{s,g}^{(\tau)}
+    =b_g+\boldsymbol{\beta}_g^{\mathsf T}\widetilde{\boldsymbol{\phi}}_{s,g}^{(\tau)},
+    \qquad
+    \min_{b_g,\boldsymbol{\beta}_g}
+    \sum_{s\in\mathcal{T}}
+    \left(z_{s,g}^{(\tau)}-\widehat{z}_{s,g}^{(\tau)}\right)^2
+    +\alpha\|\boldsymbol{\beta}_g\|_2^2,
+    \label{eq:ridge-objective}
 \end{equation}
-The auxiliary multilayer perceptron used two hidden layers of width 16, ReLU activation, and dropout of 0.1 before a scalar projection. The FC encoder and auxiliary branches were trained jointly through their summed prediction; auxiliary terms were therefore not post-hoc corrections to a fixed M0 model.
+where $b_g$ is an unpenalized intercept, $\boldsymbol{\beta}_g$ contains the processed-feature coefficients, $\alpha$ controls shrinkage, and $\mathcal{T}$ is the training set. Using training data only, undefined numeric values are median-imputed, the four nonnegative influence features are log-compressed, near-constant numeric columns are disabled, and the remaining numeric columns are standardized; missing indicators are retained without standardization. The penalty is selected from $\{0.1,1,10,100\}$ by inner-validation SmoothL1 loss, after which preprocessing and Ridge are refitted on the complete outer-training partition and predictions are returned to nonnegative NV units.
 
-Raw NV was standardized separately for each metric using statistics from the applicable training partition. Neural models used a masked SmoothL1 loss, which is quadratic for small standardized errors and less sensitive to large errors than squared loss. Undefined and training-constant targets were inactive for the corresponding loss term. Ridge\textsubscript{aux} was fitted separately for each target with its penalty selected from $\{0.1,1,10,100\}$ by inner validation. Predictions from all models were returned to NV units and constrained to be nonnegative.
+\subsection{Subject-level evaluation}
 
-The original ten subject-level folds were stratified to balance lower and higher variability using a composite of NV percentile ranks across nonconstant metrics. Inner validation used only subjects from the corresponding outer-training partition. All models reused identical saved splits at each graph threshold, and all repetitions from a participant remained together. Feature transformation, imputation, scaling, and model selection were repeated using training data only. Performance was summarized using held-out $R^2$, RMSE, MAE, and Spearman correlation. Multiple training seeds assessed optimization variability but were not treated as independent cohorts.
-
-% \subsection{Prediction of high numerical variability}
-
-% A complementary experiment examined whether the models could identify participants with unusually high NV even when precise prediction of its magnitude was difficult. This experiment was formulated as continuous score prediction rather than direct binary classification: separate BrainNetCNN and ridge-regression models learned a relative NV percentile score from 0 to 100 for each variable metric--threshold target. For BrainNetCNN, the signed FC matrix passed through edge-to-edge and edge-to-node operations, a dense layer, dropout, and a sigmoid output scaled to the percentile range. Ridge regression provided a regularized linear comparison using the 4,950 unique FC values.
-
-% High-NV labels were used only to evaluate the resulting scores. High NV was defined relative to the 90th percentile estimated from the corresponding outer-training participants, and screening performance was evaluated on held-out participants. Spearman correlation assessed ordering across the full NV range, whereas average precision and recall among the highest-scored 10\% assessed prioritization of the most sensitive participants. A direct high-NV classifier remains a possible future extension and should be compared with percentile-score regression using identical data splits and model-selection procedures.
+M0 and compact Ridge use the same participants, targets, and ten subject-level outer folds. The outer-training partitions contained 130--133 participants and the held-out partitions contained 13--16; inner validation used only the corresponding outer-training participants. All transformations and model choices were training-only. The primary results below use pooled held-out $R^2$ and Spearman rank correlation. M0 was evaluated with three neural-network initialization settings and is reported as the mean and standard deviation across them. Ridge is deterministic for fixed folds, so only its single score is shown. This matched design supports a preliminary comparison but does not replace external validation.
 
 \section{Preliminary results}
 
-Adding threshold-proximity features produced the most consistent improvement. Across the 23 nonconstant metric--threshold combinations, M1 improved mean held-out $R^2$ over M0 in 22, while the original M2 improved over M0 in 19. The refined M2 improved over the original M2 in 15 combinations and exceeded M0 in all 23. The auxiliary-only Ridge model achieved positive $R^2$ in 17 combinations, indicating that the engineered summaries alone contain predictive information, although retaining the full FC representation was beneficial for several outcomes. These descriptive comparisons are shown in Figure~\ref{fig:all-models-r2}; they do not establish statistical superiority.
+Table~\ref{tab:m0-ridge-results} summarizes the 18 reported measure--threshold endpoints. Updated compact Ridge had higher held-out $R^2$ than M0 for 17 endpoints and higher Spearman correlation for 16 endpoints. At threshold 0.05, both approaches predicted all six outcomes, while compact Ridge consistently produced the higher point estimates. At threshold 0.20, compact Ridge improved five of the six outcomes; average shortest path length was the exception for both $R^2$ and rank correlation.
 
-\begin{figure}[p]
+\begin{table}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{Figure8_all_models_R2.pdf}
-    \caption{Preliminary pooled participant-held-out $R^2$ for M0 (FC only), M1 (FC and proximity), the original M2 (FC, proximity, and structural influence), the refined M2 (stabilized auxiliary inputs and density), and auxiliary-only Ridge. Bars show means and whiskers show sample standard deviations across three training seeds. Constant-NV outcomes have undefined $R^2$. The displayed range is fixed at $-0.1$ to 1.0; red boundary markers denote results below this range.}
-    \label{fig:all-models-r2}
-\end{figure}
+    \scriptsize
+    \setlength{\tabcolsep}{3.2pt}
+    \renewcommand{\arraystretch}{1.02}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}c l r cc cc@{}}
+        \toprule
+        & & & \multicolumn{2}{c}{\textbf{M0}} & \multicolumn{2}{c}{\textbf{Compact Ridge}} \\
+        \cmidrule(lr){4-5}\cmidrule(lr){6-7}
+        $\boldsymbol{\tau}$ & \textbf{Graph measure} & $\boldsymbol{n}$ & $\boldsymbol{R^2}$ & $\boldsymbol{\rho}$ & $\boldsymbol{R^2}$ & $\boldsymbol{\rho}$ \\
+        \midrule
+        0.05 & Degree centrality      & 146 & $0.698\pm0.018$ & $0.874\pm0.012$ & 0.818 & 0.929 \\
+             & Betweenness centrality & 146 & $0.646\pm0.015$ & $0.856\pm0.014$ & 0.802 & 0.907 \\
+             & Clustering coefficient & 146 & $0.585\pm0.020$ & $0.835\pm0.016$ & 0.687 & 0.884 \\
+             & Eigenvector centrality & 146 & $0.718\pm0.016$ & $0.875\pm0.012$ & 0.836 & 0.925 \\
+             & Average shortest path  & 146 & $0.474\pm0.023$ & $0.802\pm0.012$ & 0.573 & 0.852 \\
+             & Small-worldness        & 146 & $0.415\pm0.027$ & $0.766\pm0.016$ & 0.598 & 0.855 \\
+        \addlinespace
+        0.20 & Degree centrality      & 146 & $0.394\pm0.028$ & $0.796\pm0.011$ & 0.475 & 0.824 \\
+             & Betweenness centrality & 146 & $0.640\pm0.034$ & $0.874\pm0.015$ & 0.786 & 0.919 \\
+             & Clustering coefficient & 146 & $0.615\pm0.029$ & $0.852\pm0.023$ & 0.715 & 0.882 \\
+             & Eigenvector centrality & 146 & $0.578\pm0.031$ & $0.863\pm0.017$ & 0.645 & 0.887 \\
+             & Average shortest path  & 146 & $0.222\pm0.040$ & $0.701\pm0.027$ & 0.186 & 0.686 \\
+             & Small-worldness        & 146 & $0.385\pm0.038$ & $0.784\pm0.020$ & 0.453 & 0.829 \\
+        \addlinespace
+        0.50 & Degree centrality      & 146 & $0.014\pm0.001$ & $0.401\pm0.032$ & 0.101 & 0.500 \\
+             & Betweenness centrality & 146 & $0.376\pm0.079$ & $0.839\pm0.032$ & 0.659 & 0.887 \\
+             & Clustering coefficient & 146 & $0.369\pm0.038$ & $0.789\pm0.021$ & 0.577 & 0.846 \\
+             & Eigenvector centrality & 146 & $0.134\pm0.020$ & $0.650\pm0.044$ & 0.533 & 0.774 \\
+             & Average shortest path  & 116 & $0.158\pm0.027$ & $0.548\pm0.030$ & 0.383 & 0.608 \\
+             & Small-worldness        & 116 & $0.270\pm0.023$ & $0.734\pm0.015$ & 0.472 & 0.727 \\
+        \bottomrule
+    \end{tabular}%
+    }
+    \caption{Pooled held-out prediction results for the six reported measures. M0 values are mean $\pm$ standard deviation across three initialization settings; updated nine-feature Ridge is deterministic for fixed folds. Spearman rank correlation is denoted by $\rho$.}
+    \label{tab:m0-ridge-results}
+\end{table}
 
-The original M2 failures are central to interpreting the experiment. Nearly constant structural-influence features in the training data were greatly amplified by standardization for global efficiency and path length at threshold 0.2. At threshold 0.5, an extreme held-out influence feature caused a separate eigenvector-centrality failure. The refined representation avoided these highlighted failures and improved most comparisons with the original M2, but it did not improve every outcome. Ridge also showed extreme failures when supplied the original unstable auxiliary representation. Structural influence therefore appears promising for selected measures, while its representation and scaling remain important determinants of model reliability.
-
-The high-NV experiment produced a related result. Both BrainNetCNN and ridge regression provided useful NV ordering for many targets, but identifying the extreme tail was more difficult than ranking the full cohort. Across the 23 variable targets, both models showed above-chance overall ranking for 21 targets in the exploratory permutation analysis. Evidence of above-chance high-NV screening was observed for 13 BrainNetCNN targets and 16 ridge targets. Ridge had higher mean average precision in 19 of the 23 descriptive comparisons, although no multiplicity-adjusted comparison established that either model was superior. The main takeaway is therefore that a single IEEE connectome carries useful information about relative NV for several graph measures, while high-NV screening remains incomplete and dependent on the metric and threshold.
+At threshold 0.50, updated Ridge produced higher $R^2$ than M0 for all six outcomes and higher Spearman correlation for five. In the earlier ten-feature model, an extreme standardized finite-influence-fraction value for one held-out participant produced a path-length $R^2$ of $-3.154$. Removing this predictor while retaining the participant and the original folds increased path-length $R^2$ to 0.383 and Spearman correlation to 0.608. Small-worldness showed the converse comparison between evaluation measures: updated Ridge had higher $R^2$, whereas M0 had slightly higher Spearman correlation. Because the predictor removal was motivated by inspection of the earlier held-out error, the updated results are a follow-up ablation rather than independent evidence of improved generalization.
 
 \section{Discussion and future work}
 
-The results strengthen the mechanistic link between threshold crossing and graph-measure NV. Threshold proximity was a comparatively consistent addition to FC-only learning, supporting the hypothesis that the IEEE connectome contains information about subsequent numerical fragility. Structural influence adds a second relevant component by representing where vulnerable edges occur and how strongly their hypothetical removal or addition changes a graph measure. Its occasional large gains suggest that edge location matters, but the severe M2 failures show that this information must be represented more safely.
+The feasibility experiment indicates that numerical sensitivity is partly encoded in a participant's standard connectome. M0 provides a full-information benchmark, whereas compact Ridge represents threshold proximity and the consequences of hypothetical edge changes using nine interpretable numeric features. The compact model's generally stronger point performance suggests that mechanism-informed summaries may be advantageous when the cohort is small relative to the dimensionality of the complete connectome.
 
-Several factors may limit prediction. First, the response to MCA perturbation is stochastic. This does not make its variability inherently unpredictable, but it introduces uncertainty into targets estimated from only eight to ten realizations. Second, the final IEEE connectome may omit sensitivity information from intermediate preprocessing computations or the computational environment. Third, a model can achieve a high Spearman correlation by ordering most participants correctly while still missing individuals in the extreme high-NV tail. Magnitude prediction, cohort-wide ranking, and high-NV screening should therefore be treated as related but distinct objectives.
+Important limitations remain. Threshold proximity is not a calibrated MCA switching probability, and isolated edge toggles do not represent simultaneous or correlated changes. Influence calculation is limited to 200 candidates, path-based outcomes may be undefined on disconnected graphs, and the compact vector may omit predictive information contained in the full connectome or broader feature representations. Removing the validity fraction eliminated one observed extrapolation route but does not guarantee robustness to unusual values of the remaining features. Moreover, this change followed inspection of held-out predictions, so its apparent benefit may be optimistic. Findings from one study and processing configuration may also not generalize to other populations or acquisition conditions.
 
-...
+The next stage will treat M0 and the updated compact Ridge model as baselines. Planned work will test prespecified safeguards for extreme or unavailable influence features, evaluate feature and candidate-budget ablations, assess coefficient and prediction stability, and determine whether nonlinear models using the same compact representation improve performance. Evaluation will also distinguish prediction of NV magnitude from screening for unusually high numerical sensitivity. Most importantly, the nine-feature update requires confirmation in an untouched cohort or through a newly specified, fully nested validation analysis.
