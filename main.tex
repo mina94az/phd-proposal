@@ -1,8 +1,10 @@
 \documentclass[12pt,letterpaper,oneside]{report}
 
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage{lmodern}
+\usepackage{fontspec}
+\IfFontExistsTF{Times New Roman}{\setmainfont{Times New Roman}}{
+  \setmainfont{Tinos}
+  \PackageWarningNoLine{proposal}{Times New Roman unavailable: Tinos is a preview fallback. Install the required font for submission}
+}
 \usepackage[margin=1in]{geometry}
 \usepackage{setspace}
 \usepackage{microtype}
@@ -38,13 +40,14 @@
 \setcounter{secnumdepth}{1}
 \setcounter{tocdepth}{1}
 \onehalfspacing
+\setlength{\emergencystretch}{3em}
 \setlength{\parskip}{0.35em}
 \setlength{\parindent}{1.5em}
 
 \newcommand{\npvr}{\ensuremath{\nu_{\mathrm{npv}}}}
 \newcommand{\npvratio}{NPVR}
 \newcommand{\projecttitle}{Numerical variability of functional MRI graph measures}
-
+\newcommand{\MA}[1]{\color{red}\textsc{From Mina:} #1\color{red}}
 \begin{document}
 
 \hypersetup{pageanchor=false}
@@ -56,6 +59,7 @@
   {\large Doctoral Research Proposal (ENCS 8511)\par}
   \vspace{0.25in}
   {\large Mina Alizadeh\par}
+  {\large Student ID: 40255162\par}
   \vfill
   {\large Department of Computer Science and Software Engineering\par}
   {\large Gina Cody School of Engineering and Computer Science\par}

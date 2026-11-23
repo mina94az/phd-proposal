@@ -16,7 +16,9 @@ If Actions are disabled, a repository administrator can open **Settings → Acti
 For a local build with LaTeX, Biber, and `latexmk` installed, run:
 
 ```bash
-latexmk -pdf -file-line-error -halt-on-error -interaction=nonstopmode main.tex
+latexmk -xelatex -file-line-error -halt-on-error -interaction=nonstopmode main.tex
 ```
 
 `latexmk` runs Biber automatically. The generated root-level `main.pdf` and LaTeX intermediate files are ignored by Git; PDF figures inside `figures/` remain tracked because they are required source assets.
+
+The formatting uses XeLaTeX and selects Times New Roman when installed. Tinos is a preview fallback only; install Times New Roman for the submission build, including on the CI runner.

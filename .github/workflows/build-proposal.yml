@@ -19,12 +19,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Compile proposal with latexmk and pdfLaTeX
+      - name: Compile proposal with latexmk and XeLaTeX
         uses: xu-cheng/latex-action@v4
         with:
           root_file: main.tex
           compiler: latexmk
-          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
+          args: -xelatex -file-line-error -halt-on-error -interaction=nonstopmode
           texlive_version: 2026
           os: debian
 
