@@ -44,6 +44,19 @@
 \setlength{\parskip}{0.35em}
 \setlength{\parindent}{1.5em}
 
+% Put the number and title in the same heading for numbered chapters.
+\makeatletter
+\renewcommand{\@makechapterhead}[1]{%
+  \vspace*{50\p@}%
+  {\parindent\z@ \raggedright \normalfont
+    \interlinepenalty\@M
+    \Huge\bfseries
+    \@hangfrom{\ifnum\c@secnumdepth>\m@ne \thechapter\enspace\fi}#1\par\nobreak
+    \vskip 40\p@
+  }%
+}
+\makeatother
+
 \newcommand{\npvr}{\ensuremath{\nu_{\mathrm{npv}}}}
 \newcommand{\npvratio}{NPVR}
 \newcommand{\projecttitle}{Numerical variability of functional MRI graph measures}
@@ -82,6 +95,7 @@
 \input{sections/02-NVBackground}
 \input{sections/03-Numerical variability of functional MRI graph measures}
 \input{sections/04-future-work}
+\input{sections/05-conclusion}
 
 \printbibliography[heading=bibintoc,title={References}]
 
